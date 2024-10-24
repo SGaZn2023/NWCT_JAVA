@@ -34,8 +34,6 @@ public class App
             // Session管理
             SessionManager sessionManager = new SessionManager();
 
-
-
             // 监听服务器端口
             for (Object o : data) {
                 Map<String, Object> map = (Map<String, Object>) o;
@@ -47,7 +45,6 @@ public class App
                 proxyProtocol.internalPort = (int) map.get("internal_port");
                 proxyProtocol.internalProtocol = (String) map.get("internal_protocol");
                 Listener listener = new Listener(proxyProtocol, sessionManager);
-//                listener.listenAndServer();
                 new Thread(() -> {
                     try {
                         listener.listenAndServer();
@@ -63,5 +60,8 @@ public class App
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    private static void cleanup(SessionManager sessionManager) {
+        sessionManager.closeAllSessions();
     }
 }

@@ -1,28 +1,33 @@
 package com.example.main.domain;
 
 import com.example.main.obj.ProxyProtocol;
+//import com.example.main.util.HeartBeat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+
 public class Client {
+    private static int sleepTime = 3000;
     private String clientId;    // 不得长于 36 字节
     private String publicIp;    // 不带端口
     private int connectPort;
     private static final byte CMD_END = 0x08;
     private static final String endMessage = "#EELSEYLJTHECONNECTEDISEND#";
+
+    public static int getSleepTime() {
+        return sleepTime;
+    }
 
     public static ThreadPoolExecutor pool = new ThreadPoolExecutor(
             3,  // 核心线程数
@@ -49,7 +54,7 @@ public class Client {
                 this.Run();
             } catch (Exception e) {
                 System.out.println("连接错误: " + e.getMessage());
-                Thread.sleep(5000);
+                Thread.sleep(sleepTime);
             }
             System.out.println("正在重新连接 " + this.publicIp + ":" + this.connectPort);
         }
@@ -57,7 +62,8 @@ public class Client {
 
     public void Run() throws Exception {
         Socket socket = new Socket(publicIp, connectPort);
-        System.out.println("服务器成功连接 " + this.publicIp + ":" + this.connectPort);
+        socket.setKeepAlive(true);
+        System.out.println("服务器成功连接 " + publicIp + ":" + connectPort);
         socket.setSoTimeout(3000);
         byte[] clientIdBytes = encodeClientId();
         socket.getOutputStream().write(clientIdBytes);
@@ -67,14 +73,20 @@ public class Client {
         // 内网穿透
         while (true) {
             InputStream inputStream = socket.getInputStream();
-
-            ProxyProtocol pProtocol = ProxyProtocol.decode(inputStream);
+            ProxyProtocol pProtocol;
+            pProtocol = ProxyProtocol.decode(inputStream);
 
             // 与本地端口建立连接
             Socket localSocket = null;
             switch (pProtocol.internalProtocol) {
                 case "tcp":
-                    localSocket = new Socket(pProtocol.internalIp, pProtocol.internalPort);
+                    try {
+                        localSocket = new Socket(pProtocol.internalIp, pProtocol.internalPort);
+                    } catch (Exception e) {
+                        System.out.println("本地连接失败: " + e.getMessage());
+                        Thread.sleep(sleepTime);
+                        continue;
+                    }
                     System.out.println("已与本地 " + pProtocol.internalIp + ":" + pProtocol.internalPort + " 建立连接");
                     break;
                 default:
@@ -92,15 +104,9 @@ public class Client {
                     byte[] buffer = new byte[1024];
 
                     int bytesRead;
-                    System.out.println(1);
                     while((bytesRead = inputStream.read(buffer)) != -1) {
-//                        System.out.println(bytesRead);
-//                        System.out.println(new String(buffer));
-//                        System.out.println(buffer[1]);
-//                        System.out.println(buffer[2]);
-                        // 检测结束标志
                         if (bytesRead == 1024 && buffer[1] == CMD_END) {
-//                            System.out.println("get");
+                            // 检测结束标志
                             ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 2, 2);
                             byteBuffer.order(ByteOrder.BIG_ENDIAN);
                             short length = byteBuffer.getShort();
@@ -110,7 +116,6 @@ public class Client {
                                 for (int i = 0; i < endMessageBytes.length; i++)
                                     message[i] = buffer[i + 4];
                                 String messageStr = new String(message);
-//                                System.out.println("messageStr: " + messageStr);
                                 if (endMessage.equals(messageStr)) {
                                     break;
                                 }
@@ -120,7 +125,6 @@ public class Client {
                         localOutputStream.write(buffer, 0, bytesRead);
                         localOutputStream.flush();
                     }
-//                    System.out.println("end");
 
                     // 关闭与本地的连接
                     finalLocalSocket.close();
@@ -131,8 +135,6 @@ public class Client {
             });
 
             // 发送数据
-//            pool.submit(() -> {
-
             try {
                 InputStream localInputStream = finalLocalSocket.getInputStream();
                 byte[] buffer = new byte[1024];
@@ -156,15 +158,13 @@ public class Client {
                     end[i + 4] = messageBytes[i];
                 }
 
-                socket.setSoTimeout(5000);
+                socket.setSoTimeout(sleepTime);
                 socket.getOutputStream().write(end);
                 socket.getOutputStream().flush();
                 socket.setSoTimeout(0);
 
                 System.out.println("--穿透结束--");
             }
-
-
 
         }
     }

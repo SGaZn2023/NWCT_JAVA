@@ -18,6 +18,7 @@ public class Session {
     private InputStream inputStream;
 
     public Session(Socket socket) throws IOException {
+        socket.setSoTimeout(3000);
         this.socket = socket;
         this.outputStream = socket.getOutputStream();
         this.inputStream = socket.getInputStream();
@@ -49,11 +50,9 @@ public class Session {
     }
 
     public String decodeClientId() throws IOException {
-//        System.out.println(3);
         byte[] hdr = new byte[40];
         DataInputStream reader = new DataInputStream(this.inputStream);
         reader.readFully(hdr);
-//        System.out.println(4);
 
         byte cmd = hdr[1];
 
@@ -102,7 +101,7 @@ public class Session {
         }
     }
 
-    public synchronized byte[] receive() {
+    /*public synchronized byte[] receive() {
         try {
             byte[] buffer = new byte[1024];
             int bytesRead = this.inputStream.read(buffer);
@@ -131,6 +130,6 @@ public class Session {
             message = bufferedReader.readLine();
         }
         return result.toString();
-    }
+    }*/
 
 }

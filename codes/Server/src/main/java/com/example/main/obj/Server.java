@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Server {
     private int port;
+    private static int sleepTime = 3000;
     private SessionManager sessionManager;
     private ThreadPoolExecutor pool = new ThreadPoolExecutor(
             3,  // 核心线程数
@@ -23,14 +24,14 @@ public class Server {
             new ThreadPoolExecutor.AbortPolicy()    // 阻塞队列
     );
 
+    public static int getSleepTime() {
+        return sleepTime;
+    }
+
     public Server(int port, SessionManager sessionManager) {
         this.port = port;
         this.sessionManager = sessionManager;
         pool.submit(new HeartbeatUtil(this.sessionManager));
-    }
-
-    public int getPort() {
-        return port;
     }
 
     public void listenAndServer() {

@@ -17,7 +17,7 @@ public class SessionManager {
     public synchronized Session getSessionByClientId(String clientId) throws SessionNotFoundException {
         Session session = sessions.get(clientId);
         if (session == null) {
-            throw new SessionNotFoundException("Session not found for client ID: " + clientId);
+            throw new SessionNotFoundException("Client ID 错误: " + clientId);
         }
         return session;
     }
@@ -36,5 +36,14 @@ public class SessionManager {
         Session session = sessions.get(clientId);
         session.close();
         sessions.remove(clientId);
+    }
+
+    public synchronized void closeAllSessions() {
+        for (Session session : sessions.values()) {
+            try {
+                session.close();
+            } catch (Exception e) {}
+        }
+        sessions.clear();
     }
 }

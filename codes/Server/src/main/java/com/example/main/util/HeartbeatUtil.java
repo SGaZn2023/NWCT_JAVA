@@ -4,11 +4,14 @@ import com.example.main.obj.Session;
 import com.example.main.obj.SessionManager;
 
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Map;
 
 public class HeartbeatUtil implements Runnable {
 
     private SessionManager sessionManager;
+
 
     public HeartbeatUtil(SessionManager sessionManager) {
         this.sessionManager = sessionManager;
@@ -21,12 +24,16 @@ public class HeartbeatUtil implements Runnable {
                 Map<String, Session> sessions = sessionManager.getSessions();
                 if (sessions != null) {
                     for (String clientId : sessions.keySet()) {
-                        if (sessions.get(clientId).getSocket().isClosed()) {
-                            System.out.println(clientId + " is offline");
+
+                        Socket socket = sessions.get(clientId).getSocket();
+                        try {
+                            socket.sendUrgentData(0);
+                            System.out.println(clientId + " 在线");
+                        } catch (Exception e) {
+                            System.out.println(clientId + " 已离线");
                             sessionManager.closeSession(clientId);
-                        } else {
-                            System.out.println(clientId + " is online");
                         }
+
                     }
                 }
                 Thread.sleep(5000);

@@ -66,7 +66,6 @@ public class Listener {
                             outputStream.write(buffer, 0, bytesRead);
                             outputStream.flush();
                         }
-//                        System.out.println("end");
                         // 发送结束标志
                         byte[] end = new byte[1024];
                         end[0] = 0x0;
@@ -81,7 +80,6 @@ public class Listener {
                         }
 
                         outputStream.write(end);
-//                        System.out.println("send");
 
                     } catch (Exception e) {
                         e.printStackTrace();
