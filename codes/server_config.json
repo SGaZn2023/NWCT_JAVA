@@ -1,5 +1,8 @@
 [
 	{
+		"listen_port": 5103
+	},
+	{
 		"client_id": "test_nwct",
 		"public_port": 5102,
 		"public_protocol": "tcp",

@@ -1,1 +1,1 @@
-config: "J:/NWCT_JAVA/codes/client_config.json"
+config: "./client_config.json"

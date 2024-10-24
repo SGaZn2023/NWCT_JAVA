@@ -1,1 +1,1 @@
-config: "J:/NWCT_JAVA/codes/server_config.json"
+config: "./server_config.json"

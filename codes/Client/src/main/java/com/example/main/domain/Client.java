@@ -53,7 +53,7 @@ public class Client {
             try {
                 this.Run();
             } catch (Exception e) {
-                System.out.println("连接错误: " + e.getMessage());
+                System.out.println(this.publicIp + ":" + this.connectPort +" 连接错误: " + e.getMessage());
                 Thread.sleep(sleepTime);
             }
             System.out.println("正在重新连接 " + this.publicIp + ":" + this.connectPort);

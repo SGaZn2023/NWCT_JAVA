@@ -34,9 +34,17 @@ public class App
             // Session管理
             SessionManager sessionManager = new SessionManager();
 
-            // 监听服务器端口
+            // 连接端口
+            int port = 5103;
+            int index = 0;
             for (Object o : data) {
+                index++;
                 Map<String, Object> map = (Map<String, Object>) o;
+                if (index == 1) {
+                    port = (int) map.get("listen_port");
+                    continue;
+                }
+                // 监听服务器端口
                 ProxyProtocol proxyProtocol = new ProxyProtocol();
                 proxyProtocol.clientId = (String) map.get("client_id");
                 proxyProtocol.publicPort = (int) map.get("public_port");
@@ -54,7 +62,7 @@ public class App
                 }).start();
             }
             // 创建与内网的连接
-            Server server = new Server(5103, sessionManager);
+            Server server = new Server(port, sessionManager);
             server.listenAndServer();
 
         } catch (Exception e) {
