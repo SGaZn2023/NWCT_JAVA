@@ -106,6 +106,7 @@ public class Client {
                     int bytesRead;
                     while((bytesRead = inputStream.read(buffer)) != -1) {
                         if (bytesRead == 1024 && buffer[1] == CMD_END) {
+                            System.out.println("get end");
                             // 检测结束标志
                             ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 2, 2);
                             byteBuffer.order(ByteOrder.BIG_ENDIAN);
@@ -117,6 +118,7 @@ public class Client {
                                     message[i] = buffer[i + 4];
                                 String messageStr = new String(message);
                                 if (endMessage.equals(messageStr)) {
+                                    System.out.println("?");
                                     break;
                                 }
                             }
@@ -128,6 +130,7 @@ public class Client {
 
                     // 关闭与本地的连接
                     finalLocalSocket.close();
+                    System.out.println("??");
 
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -145,6 +148,7 @@ public class Client {
                     outputStream.flush();
                 }
             } catch (IOException e) {
+                System.out.println("???");
                 // 发送结束标志
                 byte[] end = new byte[1024];
                 end[0] = 0x0;
