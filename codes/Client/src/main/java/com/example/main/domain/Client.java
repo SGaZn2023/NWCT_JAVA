@@ -2,6 +2,7 @@ package com.example.main.domain;
 
 import com.example.main.obj.ProxyProtocol;
 //import com.example.main.util.HeartBeat;
+import com.example.main.util.MyIO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -61,6 +62,7 @@ public class Client {
     }
 
     public void Run() throws Exception {
+        // 创建连个 socket 一个发送信息，一个发送数据
         Socket socket = new Socket(publicIp, connectPort);
         socket.setKeepAlive(true);
         System.out.println("服务器成功连接 " + publicIp + ":" + connectPort);
@@ -71,7 +73,7 @@ public class Client {
         socket.setSoTimeout(0);
 
         // 内网穿透
-        while (true) {
+        /*while (true) {
             InputStream inputStream = socket.getInputStream();
             ProxyProtocol pProtocol;
             pProtocol = ProxyProtocol.decode(inputStream);
@@ -170,6 +172,59 @@ public class Client {
                 System.out.println("--穿透结束--");
             }
 
+        }*/
+
+        InputStream inputStream = socket.getInputStream();
+        while (true) {
+
+            ProxyProtocol pProtocol = ProxyProtocol.decode(inputStream);
+            if (pProtocol == null) continue;
+            Socket localSocket = null;
+            switch (pProtocol.internalProtocol) {
+                case "tcp":
+                    localSocket = new Socket(pProtocol.internalIp, pProtocol.internalPort);
+                    Socket finalLocalSocket = localSocket;
+//                    pool.submit(() -> {
+                        handleTcp(finalLocalSocket, socket);
+                        try {
+                            finalLocalSocket.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+//                    });
+                    break;
+                default:
+                    System.out.println("暂不支持 " + pProtocol.internalProtocol + " 协议");
+            }
+//            while (true) {
+//                try {
+//                    localSocket.sendUrgentData(0);
+//                } catch (Exception e) {
+//                    break;
+//                }
+//            }
+        }
+    }
+
+    public void handleTcp(Socket localSocket, Socket remoteSocket) {
+        try {
+            InputStream localIn = localSocket.getInputStream();
+            OutputStream localOut = localSocket.getOutputStream();
+            InputStream remoteIn = remoteSocket.getInputStream();
+            OutputStream remoteOut = remoteSocket.getOutputStream();
+
+            // 接收服务器信息
+            pool.submit(() -> {
+                try {
+                    MyIO.copyWithListenEnd(remoteIn, localOut);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            // 向服务器发送信息
+            MyIO.copy(localIn, remoteOut);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -192,4 +247,5 @@ public class Client {
 
         return result;
     }
+
 }

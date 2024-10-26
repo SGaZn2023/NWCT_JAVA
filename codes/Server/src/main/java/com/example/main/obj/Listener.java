@@ -1,5 +1,7 @@
 package com.example.main.obj;
 
+import com.example.main.util.MyIO;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,8 +47,13 @@ public class Listener {
     public void listenAndServerTCP() {
         try {
             ss = new ServerSocket(pProtocol.publicPort);
+            Session session = this.sessionManager.getSessionByClientId(pProtocol.clientId);
+            byte[] ppBytes = pProtocol.encode();
+            System.out.println("ppBytes[1] = " + ppBytes[1]);
+            session.send(ppBytes);
+            System.out.println("服务器启动成功，等待外界访问");
             // 等待外界访问
-            while (true) {
+            /*while (true) {
                 System.out.println("服务器启动，等待外界访问");
                 Socket socket = ss.accept();
                 System.out.println("外界访问");
@@ -117,9 +124,46 @@ public class Listener {
                     throw new RuntimeException(e);
                 }
                 System.out.println("--穿透结束--");
+            }*/
+            while(true) {
+                Socket socket = ss.accept();
+                System.out.println("外界访问");
+                pool.submit(() -> {
+                    handleTcp(session.getSocket(), socket);
+                    try {
+                        socket.close();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
+
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void handleTcp(Socket sessionSocket, Socket remoteSocket) {
+        try {
+            InputStream sessionIn = sessionSocket.getInputStream();
+            OutputStream sessionOut = sessionSocket.getOutputStream();
+            InputStream remoteIn = remoteSocket.getInputStream();
+            OutputStream remoteOut = remoteSocket.getOutputStream();
+
+            System.out.println("--开始穿透--");
+            // 向内网发送数据
+            pool.submit(() -> {
+                try {
+                    MyIO.copy(remoteIn, sessionOut);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            // 接收内网发送的数据
+            MyIO.copyWithListenEnd(sessionIn, remoteOut);
+            System.out.println("--结束穿透--");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

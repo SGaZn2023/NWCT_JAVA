@@ -50,7 +50,9 @@ public class ProxyProtocol {
         byte cmd = hdr[1];
 
         if (cmd != CMD_PProtocol) {
-            throw new IOException("Invalid command: " + cmd);
+//            System.out.println(new String(hdr));
+//            throw new IOException("Invalid command: " + cmd);
+            return null;
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(hdr, 2, 2);
