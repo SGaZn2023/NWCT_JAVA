@@ -4,29 +4,43 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.util.ArrayList;
 
 public class Session {
     private static final byte CMD_HANDSHAKE = 0x01;
+    private static final byte CMD_HEARTBEAT = 0x02;
+    private static final String heartbeatMessage = "#EELSEYLJTHECONNECTEDISHEARTBEAT#"; // 33字符
+
+//    private static final byte CMD_CONNECT = 0x02;
+//
+//    private static final String sureConnect = "#EELSEYLJSURETOCONNECT#";
 
     private String clientId;    // 不得超过 36 个字节
-    private Socket socket;
-    private OutputStream outputStream;
-    private InputStream inputStream;
+    private ServerSocket ss;
+    private Socket messageSocket;  // 通信用 socket
+    private Socket heartbeatSocket; // 心跳检测 socket
+    private ArrayList<Socket> socketList; // 保存所有连接的 socket
 
-    public Session(Socket socket) throws IOException {
-        socket.setSoTimeout(3000);
-        this.socket = socket;
-        this.outputStream = socket.getOutputStream();
-        this.inputStream = socket.getInputStream();
+    public Session(ServerSocket ss, Socket messageSocket, Socket heartbeatSocket) throws IOException {
+        messageSocket.setSoTimeout(3000);
+        this.ss = ss;
+        this.messageSocket = messageSocket;
         this.clientId = decodeClientId();
+        this.socketList = new ArrayList<>();
+        decodeHeartbeat(heartbeatSocket);
+        this.heartbeatSocket = heartbeatSocket;
     }
 
     public String getClientId() {
         return clientId;
+    }
+
+    public ArrayList<Socket> getSocketList() {
+        return socketList;
     }
 
     public byte[] encodeClientId() throws JsonProcessingException {
@@ -50,8 +64,12 @@ public class Session {
     }
 
     public String decodeClientId() throws IOException {
+        return decodeClientId(this.messageSocket.getInputStream());
+    }
+
+    public static String decodeClientId(InputStream in) throws IOException {
         byte[] hdr = new byte[40];
-        DataInputStream reader = new DataInputStream(this.inputStream);
+        DataInputStream reader = new DataInputStream(in);
         reader.readFully(hdr);
 
         byte cmd = hdr[1];
@@ -74,62 +92,79 @@ public class Session {
         return objectMapper.readValue(body, String.class);
     }
 
-    public Socket getSocket() {
-        return socket;
+    public static void decodeHeartbeat(Socket socket) throws IOException {
+        byte[] hdr = new byte[40];
+        DataInputStream reader = new DataInputStream(socket.getInputStream());
+        reader.readFully(hdr);
+
+        byte cmd = hdr[1];
+
+        if (cmd != CMD_HEARTBEAT) {
+            throw new IOException("Invalid command: " + cmd);
+        }
+
+        ByteBuffer buffer = ByteBuffer.wrap(hdr, 2, 2);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        short bodyLen = buffer.getShort();
+
+        byte[] body = new byte[bodyLen];
+
+        for (int i = 0; i < bodyLen; i++) {
+            body[i] = hdr[4 + i];
+        }
+
+        String str = new String(body);
+        if (!heartbeatMessage.equals(str))
+            throw new IOException("Invalid heartbeat message: " + str);
+
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        return objectMapper.readValue(body, String.class);
     }
 
-    public OutputStream getOutputStream() {
-        return outputStream;
+    public Socket getMessageSocket() {
+        return messageSocket;
     }
 
-    public InputStream getInputStream() {
-        return inputStream;
+    public Socket getHeartbeatSocket() {
+        return heartbeatSocket;
     }
+
 
     public void close() throws IOException {
-        this.socket.close();
+        this.messageSocket.close();
+        if (this.socketList == null) return;
+        for (Socket socket : this.socketList) {
+            socket.close();
+        }
     }
 
     public synchronized void send(byte[] bytes) {
         try {
-            this.socket.setSoTimeout(3000);
-            this.socket.getOutputStream().write(bytes);
-            this.socket.getOutputStream().flush();
-            this.socket.setSoTimeout(0);
+            this.messageSocket.setSoTimeout(3000);
+            this.messageSocket.getOutputStream().write(bytes);
+            this.messageSocket.getOutputStream().flush();
+            this.messageSocket.setSoTimeout(0);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    /*public synchronized byte[] receive() {
-        try {
-            byte[] buffer = new byte[1024];
-            int bytesRead = this.inputStream.read(buffer);
-            return Arrays.copyOf(buffer, bytesRead);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    public synchronized Socket getSocket(ProxyProtocol pProtocol) throws Exception {
+//        System.out.println("startGetSocket");
+        byte[] bytes = pProtocol.encode();
 
-    public synchronized void sendMessage(String message) throws Exception {
-        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(this.outputStream));
-        bufferedWriter.write(message);
-        bufferedWriter.newLine();
-        bufferedWriter.write("#EELSEYLJNWCTMESSAGEISEND#");
-        bufferedWriter.newLine();
-        bufferedWriter.flush();
-    }
+        this.messageSocket.getOutputStream().write(bytes);
+//        System.out.println("sendPP");
 
-    public synchronized String receiveMessage() throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(this.inputStream));
-        StringBuilder result = new StringBuilder();
-        String message = bufferedReader.readLine();
-        while (!message.equals("#EELSEYLJNWCTMESSAGEISEND#")) {
-            result.append(message);
-            message = bufferedReader.readLine();
-        }
-        return result.toString();
-    }*/
+        Socket socket = this.ss.accept();
+//        System.out.println("accept");
+
+        decodeClientId(socket.getInputStream());
+//        System.out.println("decodeClientId");
+
+        this.socketList.add(socket);
+//        System.out.println("gotten socket");
+        return socket;
+    }
 
 }

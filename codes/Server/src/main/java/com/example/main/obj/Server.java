@@ -40,14 +40,22 @@ public class Server {
             while (true) {
                 System.out.println("服务器启动，等待内网连接");
                 Socket s = ss.accept();
-
-                pool.submit(() -> {
+                Socket s2 = ss.accept();
+                try {
+                    this.sessionManager.createSession(ss, s, s2);
+                } catch (Exception e) {
+                    System.out.println("创建会话失败，关闭连接");
+                    s.close();
+                    s2.close();
+                }
+                while (true) {
                     try {
-                        this.sessionManager.createSession(s);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        s2.getOutputStream().write(0);
+                        Thread.sleep(3000);
+                    } catch (Exception e) {
+                        break;
                     }
-                });
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

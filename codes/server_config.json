@@ -4,6 +4,7 @@
 	},
 	{
 		"client_id": "test_nwct",
+		"public_ip": "127.0.0.1",
 		"public_port": 5102,
 		"public_protocol": "tcp",
 		"internal_port": 9090,

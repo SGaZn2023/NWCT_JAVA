@@ -7,8 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -40,104 +38,54 @@ public class Listener {
             case "tcp":
                 this.listenAndServerTCP();
             default:
-                throw new IOException("Protocol not supported");
+                throw new IOException("暂不支持该协议");
         }
     }
 
     public void listenAndServerTCP() {
         try {
             ss = new ServerSocket(pProtocol.publicPort);
-            Session session = this.sessionManager.getSessionByClientId(pProtocol.clientId);
-            byte[] ppBytes = pProtocol.encode();
-            System.out.println("ppBytes[1] = " + ppBytes[1]);
-            session.send(ppBytes);
-            System.out.println("服务器启动成功，等待外界访问");
             // 等待外界访问
-            /*while (true) {
-                System.out.println("服务器启动，等待外界访问");
-                Socket socket = ss.accept();
-                System.out.println("外界访问");
-                Session session = sessionManager.getSessionByClientId(pProtocol.clientId);
-                byte[] pProtocolBytes = this.pProtocol.encode();
-                session.send(pProtocolBytes);
-                System.out.println("--开始穿透--");
-                // 发送数据
-                pool.submit(() -> {
-                    try {
-                        byte[] buffer = new byte[1024];
-
-                        int bytesRead;
-                        InputStream inputStream = socket.getInputStream();
-                        OutputStream outputStream = session.getOutputStream();
-                        while((bytesRead = inputStream.read(buffer)) != -1) {
-                            outputStream.write(buffer, 0, bytesRead);
-                            outputStream.flush();
-                        }
-                        System.out.println("end");
-                        // 发送结束标志
-                        byte[] end = new byte[1024];
-                        end[0] = 0x0;
-                        end[1] = CMD_END;
-                        byte[] messageBytes = endMessage.getBytes();
-                        ByteBuffer byteBuffer = ByteBuffer.wrap(end);
-                        byteBuffer.order(ByteOrder.BIG_ENDIAN);
-                        byteBuffer.putShort(2, (short) messageBytes.length);
-
-                        for (int i = 0; i < messageBytes.length; i++) {
-                            end[i + 4] = messageBytes[i];
-                        }
-
-                        outputStream.write(end);
-                        System.out.println("send");
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-                //接收数据
-                try {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    OutputStream outputStream = socket.getOutputStream();
-                    InputStream inputStream = session.getInputStream();
-                    while((bytesRead = inputStream.read(buffer)) != -1) {
-                        // 检测结束标志
-                        if (bytesRead == 1024 && buffer[1] == CMD_END) {
-                            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 2, 2);
-                            byteBuffer.order(ByteOrder.BIG_ENDIAN);
-                            short length = byteBuffer.getShort();
-                            byte[] endMessageBytes = endMessage.getBytes();
-                            if (length == endMessageBytes.length) {
-                                byte[] message = new byte[length];
-                                for (int i = 0; i < endMessageBytes.length; i++)
-                                    message[i] = buffer[i + 4];
-                                String messageStr = new String(message);
-                                if (endMessage.equals(messageStr)) {
-                                    break;
-                                }
-                            }
-                        }
-                        // 发送
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                System.out.println("--穿透结束--");
-            }*/
             while(true) {
+//                System.out.println("服务器启动成功，等待外界访问");
                 Socket socket = ss.accept();
-                System.out.println("外界访问");
-                pool.submit(() -> {
-                    handleTcp(session.getSocket(), socket);
+//                System.out.println("外界访问");
+                Session session;
+                try {
+                    session = this.sessionManager.getSessionByClientId(pProtocol.clientId);
+                } catch (Exception e) {
+                    socket.close();
+//                    e.printStackTrace();
+                    System.out.println("没有找到相应客户端连接: " + pProtocol.clientId);
+                    continue;
+                }
+//                System.out.println("getSession");
+                Socket sessionSocket;
+                try {
+                    sessionSocket = session.getSocket(pProtocol);
+                } catch (Exception e) {
+                    socket.close();
+//                    e.printStackTrace();
+                    System.out.println("与客户端建立连接失败");
+                    continue;
+                }
+//                System.out.println("getSocket");
+                new Thread(() -> {
+                    handleTcp(sessionSocket, socket);
                     try {
                         socket.close();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    } catch (IOException e) {
+//                        e.printStackTrace();
+                        System.out.println("外界 socket 关闭失败");
                     }
-                });
+                    try {
+                        sessionSocket.close();
+                    } catch (Exception e) {
+//                        e.printStackTrace();
+                        System.out.println("客户端 socket 关闭失败");
+                    }
+                }).start();
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -150,20 +98,23 @@ public class Listener {
             InputStream remoteIn = remoteSocket.getInputStream();
             OutputStream remoteOut = remoteSocket.getOutputStream();
 
-            System.out.println("--开始穿透--");
+//            System.out.println("--开始穿透--");
             // 向内网发送数据
-            pool.submit(() -> {
+            new Thread(() -> {
                 try {
                     MyIO.copy(remoteIn, sessionOut);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+//                    throw new RuntimeException(e);
+//                    e.printStackTrace();
                 }
-            });
+            }).start();
             // 接收内网发送的数据
-            MyIO.copyWithListenEnd(sessionIn, remoteOut);
-            System.out.println("--结束穿透--");
+//            MyIO.copyWithListenEnd(sessionIn, remoteOut);
+            MyIO.copy(sessionIn, remoteOut);
+//            System.out.println("--结束穿透--");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+//            throw new RuntimeException(e);
+//            e.printStackTrace();
         }
     }
 }

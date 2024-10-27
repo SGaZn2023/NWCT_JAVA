@@ -13,7 +13,7 @@ public class ProxyProtocol {
     // 不得大于 2k 字节
 
     public String clientId;
-//    public String publicIp;
+    public String publicIp;
     public int publicPort;
     public String publicProtocol;
     public String internalIp;
@@ -50,8 +50,6 @@ public class ProxyProtocol {
         byte cmd = hdr[1];
 
         if (cmd != CMD_PProtocol) {
-//            System.out.println(new String(hdr));
-//            throw new IOException("Invalid command: " + cmd);
             return null;
         }
 

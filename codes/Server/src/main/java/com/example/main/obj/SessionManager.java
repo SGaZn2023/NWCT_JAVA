@@ -3,6 +3,7 @@ package com.example.main.obj;
 import com.example.main.exception.SessionNotFoundException;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,11 +23,24 @@ public class SessionManager {
         return session;
     }
 
-    public synchronized void createSession(Socket socket) throws IOException {
-        Session session = new Session(socket);
+    public synchronized void createSession(ServerSocket ss, Socket messageSocket, Socket heartbeatSocket) throws IOException {
+        Session session = new Session(ss, messageSocket, heartbeatSocket);
         String clientId = session.getClientId();
         if (sessions.containsKey(clientId)) {
-            throw new IOException("此 clientId 重复: " + clientId);
+            // 检查已存在的session能否联通
+            Socket hb = sessions.get(clientId).getHeartbeatSocket();
+            boolean canConnect = false;
+            try {
+                hb.getOutputStream().write(1);
+                canConnect = true;
+            } catch (IOException e) {
+                // 如果不能联通，则关闭已存在的session
+                sessions.get(clientId).close();
+                sessions.remove(clientId);
+            }
+            if (canConnect) {
+                throw new IOException("此 clientId 重复: " + clientId);
+            }
         }
         sessions.put(clientId, session);
         System.out.println(clientId + " 连接成功");

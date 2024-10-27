@@ -47,6 +47,7 @@ public class App
                 // 监听服务器端口
                 ProxyProtocol proxyProtocol = new ProxyProtocol();
                 proxyProtocol.clientId = (String) map.get("client_id");
+                proxyProtocol.publicIp = (String) map.get("public_ip");
                 proxyProtocol.publicPort = (int) map.get("public_port");
                 proxyProtocol.publicProtocol = (String) map.get("public_protocol");
                 proxyProtocol.internalIp = (String) map.get("internal_ip");

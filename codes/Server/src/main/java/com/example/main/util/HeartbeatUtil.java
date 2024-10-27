@@ -4,8 +4,7 @@ import com.example.main.obj.Session;
 import com.example.main.obj.SessionManager;
 
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Map;
 
 public class HeartbeatUtil implements Runnable {
@@ -24,11 +23,13 @@ public class HeartbeatUtil implements Runnable {
                 Map<String, Session> sessions = sessionManager.getSessions();
                 if (sessions != null) {
                     for (String clientId : sessions.keySet()) {
-
-                        Socket socket = sessions.get(clientId).getSocket();
+                        Session session = sessions.get(clientId);
+                        Socket socket = session.getHeartbeatSocket();
                         try {
-                            socket.sendUrgentData(0);
+//                            socket.sendUrgentData(1);
+                            socket.getOutputStream().write(0);
                             System.out.println(clientId + " 在线");
+//                            testChildSockets(session);
                         } catch (Exception e) {
                             System.out.println(clientId + " 已离线");
                             sessionManager.closeSession(clientId);
@@ -41,5 +42,16 @@ public class HeartbeatUtil implements Runnable {
         }catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void testChildSockets(Session session) {
+        ArrayList<Socket> sockets = session.getSocketList();
+        if (sockets == null) return;
+        for (Socket childSocket : sockets)
+            try {
+                childSocket.sendUrgentData(0);
+            } catch (Exception e) {
+                sockets.remove(childSocket);
+            }
     }
 }
