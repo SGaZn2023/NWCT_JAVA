@@ -2,7 +2,6 @@ package com.example.main.obj;
 
 import com.example.main.util.HeartbeatUtil;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -55,6 +54,10 @@ public class Server {
                     } catch (Exception e) {
                         break;
                     }
+
+//                    if (s.isClosed() || s2.isClosed()) {
+//                        break;
+//                    }
                 }
             }
         } catch (Exception e) {

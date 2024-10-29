@@ -119,6 +119,7 @@ public class Session {
 
 //        ObjectMapper objectMapper = new ObjectMapper();
 //        return objectMapper.readValue(body, String.class);
+//        System.out.println("decode heartbeat success");
     }
 
     public Socket getMessageSocket() {
@@ -132,6 +133,7 @@ public class Session {
 
     public void close() throws IOException {
         this.messageSocket.close();
+        this.heartbeatSocket.close();
         if (this.socketList == null) return;
         for (Socket socket : this.socketList) {
             socket.close();
@@ -153,8 +155,10 @@ public class Session {
 //        System.out.println("startGetSocket");
         byte[] bytes = pProtocol.encode();
 
+        this.messageSocket.setSoTimeout(3000);
         this.messageSocket.getOutputStream().write(bytes);
-//        System.out.println("sendPP");
+//        System.out.println("sendProxyProtocol");
+//        this.messageSocket.setSoTimeout(0);
 
         Socket socket = this.ss.accept();
 //        System.out.println("accept");

@@ -47,9 +47,9 @@ public class Listener {
             ss = new ServerSocket(pProtocol.publicPort);
             // 等待外界访问
             while(true) {
-//                System.out.println("服务器启动成功，等待外界访问");
+                System.out.println("服务器启动成功，等待外界访问");
                 Socket socket = ss.accept();
-//                System.out.println("外界访问");
+                System.out.println("外界访问");
                 Session session;
                 try {
                     session = this.sessionManager.getSessionByClientId(pProtocol.clientId);

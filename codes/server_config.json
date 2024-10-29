@@ -8,7 +8,7 @@
 		"public_port": 5102,
 		"public_protocol": "tcp",
 		"internal_port": 9090,
-		"internal_ip": "127.0.0.1",
+		"internal_ip": "localhost",
 		"internal_protocol": "tcp"
 	}
 ]

@@ -62,7 +62,6 @@ public class Client {
                     session.setMessageSocket(new Socket(publicIp, connectPort));
                     Socket socket = session.getMessageSocket();
                     socket.setKeepAlive(true);
-                    System.out.println("服务器成功连接 " + publicIp + ":" + connectPort);
                     socket.setSoTimeout(3000);
                     byte[] clientIdBytes = encodeClientId();
                     socket.getOutputStream().write(clientIdBytes);
@@ -77,6 +76,7 @@ public class Client {
                     heartbeatSocket.getOutputStream().write(heartbeatBytes);
                     heartbeatSocket.getOutputStream().flush();
                     heartbeatSocket.setSoTimeout(0);
+                    System.out.println("服务器成功连接 " + publicIp + ":" + connectPort);
 
                     while(true) {
                         try {
@@ -117,6 +117,7 @@ public class Client {
         InputStream inputStream = socket.getInputStream();
         while (true) {
             ProxyProtocol pProtocol = ProxyProtocol.decode(inputStream);
+//            System.out.println("getProxyProtocol");
             if (pProtocol == null) continue;
             Socket localSocket = null;
             switch (pProtocol.internalProtocol) {
@@ -134,6 +135,7 @@ public class Client {
                     Socket serverSocket;
                     while (true) {
                         try {
+//                            System.out.println("connect server");
                             serverSocket = createSocketWithServer();
                             break;
                         } catch (Exception e) {

@@ -6,19 +6,19 @@ public class Session {
     private Socket messageSocket;
     private Socket heartbeatSocket;
 
-    public Socket getHeartbeatSocket() {
+    public synchronized Socket getHeartbeatSocket() {
         return heartbeatSocket;
     }
 
-    public void setHeartbeatSocket(Socket heartbeatSocket) {
+    public synchronized void setHeartbeatSocket(Socket heartbeatSocket) {
         this.heartbeatSocket = heartbeatSocket;
     }
 
-    public Socket getMessageSocket() {
+    public synchronized Socket getMessageSocket() {
         return messageSocket;
     }
 
-    public void setMessageSocket(Socket messageSocket) {
+    public synchronized void setMessageSocket(Socket messageSocket) {
         this.messageSocket = messageSocket;
     }
 }
