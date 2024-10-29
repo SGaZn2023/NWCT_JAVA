@@ -48,6 +48,20 @@ java -jar Client.jar ./Client.yaml
 java -jar Server.jar ./Server.yaml
 ```
 
+## 其它配置文件
+
+1. Server.yaml
+
+   ```yaml
+   config: "这是 server_config.json 的路径"
+   ```
+   
+3. Client.yaml
+
+   ```yaml
+   config: "这是 client_config.json 的路径"
+   ```
+
 ## 反馈
 
 可发送至邮箱 zshenwei510@163.com
