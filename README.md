@@ -48,6 +48,10 @@ java -jar Client.jar ./Client.yaml
 java -jar Server.jar ./Server.yaml
 ```
 
+## 建议
+
+建议在内网计算机上持续运行 Client.jar 程序，在需要内网穿透时直接运行服务器上的 Server.jar 程序即可。
+
 ## 其它配置文件
 
 1. Server.yaml
