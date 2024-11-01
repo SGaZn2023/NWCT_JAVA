@@ -37,6 +37,9 @@ public class Server {
         try {
             ServerSocket ss = new ServerSocket(this.port);
             while (true) {
+                if (ss.isClosed()) {
+                    ss = new ServerSocket(this.port);
+                }
                 System.out.println("服务器启动，等待内网连接");
                 Socket s = ss.accept();
                 Socket s2 = ss.accept();

@@ -18,6 +18,18 @@ import java.util.Map;
 public class App 
 {
     public static void main( String[] args ) {
+        testInit();
+    }
+    public static void testInit() {
+        try {
+            Client client = new Client("test_nwct", "127.0.0.1", 5103);
+            client.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void init(String[] args) {
         // 配置文件读取
         if (args.length < 1) return;
         Yaml yaml = new Yaml();
