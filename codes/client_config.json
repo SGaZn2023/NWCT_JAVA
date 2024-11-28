@@ -1,5 +1,8 @@
 {
     "client_id": "test_nwct",
     "public_ip": "mine.sgz.com",
-    "connect_port": 5103
+    "connect_port": 5103,
+    "is_encrypt": true,
+	"secret_key": "7c8ce82c417155f4240b9944a56cc273984b1208cff16424106d23602293ef30",
+	"iv": "ba4971380f93a690020f9e81"
 }
